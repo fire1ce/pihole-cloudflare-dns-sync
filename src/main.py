@@ -1,8 +1,5 @@
-from asyncio import wait_for
 import pihole_api as pi
 import CloudFlare
-import json
-from requests import post
 from deepdiff import DeepDiff
 from time import sleep
 from os import environ
@@ -16,6 +13,7 @@ sleep_for_x_sec = 60 * run_every_x_min
 ### CloudFlare params ###
 cf = CloudFlare.CloudFlare(token=str(environ["CLOUDFLARE_API_TOKEN"]))
 cf_domain = str(environ["CLOUDFLARE_DOMAIN"])
+remove_proxied = str(environ["REMOVE_PROXIED"])
 
 ### Pihole params ###
 pihole_host = str(environ["PIHOLE_HOST"])
@@ -98,6 +96,14 @@ def get_cf_records():
         print("Cloudflare api call failed: " + str(error))
         exit(1)
     print("Fetched Cloudflare's DNS records")
+    return cf_dns_records
+
+
+# remove proxied records from cf_dns_records
+def remove_proxied_records(cf_dns_records):
+    for dns_record in cf_dns_records:
+        if dns_record["proxied"] == True:
+            cf_dns_records.remove(dns_record)
     return cf_dns_records
 
 
@@ -264,6 +270,10 @@ while True:
     pihole_a_records = get_a_records_from_pihole()
     pihole_cname_records = get_cname_records_from_pihole()
     cf_dns_records = get_cf_records()
+
+    if remove_proxied == "yes":
+        cf_dns_records = remove_proxied_records(cf_dns_records)
+
     cloudflare_a_records = get_cf_a_records(cf_dns_records)
     cloudflare_cname_records = get_cf_cname_records(cf_dns_records)
 

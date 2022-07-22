@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 ENV PYTHONUNBUFFERED=1 \
   CLOUDFLARE_API_TOKEN=change_me \
   CLOUDFLARE_DOMAIN=example.com \
+  REMOVE_PROXIED=yes \
   PIHOLE_HOST=123.123.123.123 \
   PIHOLE_PORT=80 \
   USE_HTTPS=no \
