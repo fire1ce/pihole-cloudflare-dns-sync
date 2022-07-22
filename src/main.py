@@ -99,39 +99,56 @@ def get_cf_records():
     return cf_dns_records
 
 
-# remove proxied records from cf_dns_records
-def remove_proxied_records(cf_dns_records):
+# get proxied records from cf_dns_records
+def get_proxied_records(cf_dns_records):
+    cf_proxied_records = {}
     for dns_record in cf_dns_records:
         if dns_record["proxied"] == True:
-            cf_dns_records.remove(dns_record)
-    return cf_dns_records
+            # add all proxied records to a dict
+            cf_proxied_records[dns_record["name"]] = dns_record["content"]
+    return cf_proxied_records
+
+
+# Remove Proxied A records from cloudflare records
+def remove_proxied_a_records(cf_a_records, cf_proxied_records):
+    for record in cf_proxied_records:
+        if record in cf_a_records:
+            del cf_a_records[record]
+    return cf_a_records
+
+
+# Remove Proxied CNAME records from cloudflare records
+def remove_proxied_cname_records(cf_cname_records, cf_proxied_records):
+    for record in cf_proxied_records:
+        if record in cf_cname_records:
+            del cf_cname_records[record]
+    return cf_cname_records
 
 
 # Create a dictionary of the cloudflare A records
 def get_cf_a_records(cf_dns_records):
-    cloudflare_a_record_dict = {}
+    cf_a_record_dict = {}
     for dns_record in cf_dns_records:
         if dns_record["type"] == "A":
-            cloudflare_a_record_dict[dns_record["name"]] = dns_record["content"]
-    return cloudflare_a_record_dict
+            cf_a_record_dict[dns_record["name"]] = dns_record["content"]
+    # if cf_a_record_dict has cf_proxied_records remove them
+    return cf_a_record_dict
 
 
 # Create a dictionary of the cloudflare CNAME records
 def get_cf_cname_records(cf_dns_records):
-    cloudflare_cname_record_dict = {}
+    cf_cname_record_dict = {}
     for dns_record in cf_dns_records:
         if dns_record["type"] == "CNAME":
-            cloudflare_cname_record_dict[dns_record["name"]] = dns_record["content"]
-    return cloudflare_cname_record_dict
+            cf_cname_record_dict[dns_record["name"]] = dns_record["content"]
+    return cf_cname_record_dict
 
 
 ### Sync the A records ###
-
-
 def add_new_a_records(a_records_diff):
     for record in a_records_diff.get("dictionary_item_added", {}):
         hostname = record.split("['")[1].split("']")[0]
-        ip = cloudflare_a_records[hostname]
+        ip = cf_a_records[hostname]
         try:
             pihole.dns("add", ip_address=ip, domain=hostname)
             print("Added A record: " + hostname + ": " + ip)
@@ -158,7 +175,7 @@ def update_a_records(a_records_diff):
     for record in a_records_diff.get("values_changed", {}):
         hostname = record.split("['")[1].split("']")[0]
         old_ip = pihole_a_records[hostname]
-        new_ip = cloudflare_a_records[hostname]
+        new_ip = cf_a_records[hostname]
         try:
             pihole.dns("delete", ip_address=old_ip, domain=hostname)
         except Exception as error:
@@ -183,12 +200,10 @@ def update_a_records(a_records_diff):
 
 
 ### Sync the CNAME records ###
-
-
 def add_new_cname_records(cname_records_diff):
     for record in cname_records_diff.get("dictionary_item_added", {}):
         hostname = record.split("['")[1].split("']")[0]
-        targe_hostname = cloudflare_cname_records[hostname]
+        targe_hostname = cf_cname_records[hostname]
         try:
             pihole.cname("add", hostname, targe_hostname)
             print("Added CNAME record: " + hostname + ":" + targe_hostname)
@@ -229,7 +244,7 @@ def update_cname_records(cname_records_diff):
     for record in cname_records_diff.get("values_changed", {}):
         hostname = record.split("['")[1].split("']")[0]
         old_target_hostname = pihole_cname_records[hostname]
-        new_target_hostname = cloudflare_cname_records[hostname]
+        new_target_hostname = cf_cname_records[hostname]
         try:
             pihole.cname("delete", hostname, old_target_hostname)
         except Exception as error:
@@ -270,19 +285,22 @@ while True:
     pihole_a_records = get_a_records_from_pihole()
     pihole_cname_records = get_cname_records_from_pihole()
     cf_dns_records = get_cf_records()
+    cf_a_records = get_cf_a_records(cf_dns_records)
+    cf_cname_records = get_cf_cname_records(cf_dns_records)
 
     if remove_proxied == "yes":
-        cf_dns_records = remove_proxied_records(cf_dns_records)
+        cf_proxied_records = get_proxied_records(cf_dns_records)
 
-    cloudflare_a_records = get_cf_a_records(cf_dns_records)
-    cloudflare_cname_records = get_cf_cname_records(cf_dns_records)
+    if cf_proxied_records != {}:
+        cf_a_records = remove_proxied_a_records(cf_a_records, cf_proxied_records)
+        cf_cname_records = remove_proxied_cname_records(cf_cname_records, cf_proxied_records)
 
     a_records_diff = DeepDiff(
-        pihole_a_records, cloudflare_a_records, ignore_string_case=True, ignore_order=True
+        pihole_a_records, cf_a_records, ignore_string_case=True, ignore_order=True
     )
 
     cname_records_diff = DeepDiff(
-        pihole_cname_records, cloudflare_cname_records, ignore_string_case=True, ignore_order=True
+        pihole_cname_records, cf_cname_records, ignore_string_case=True, ignore_order=True
     )
 
     if a_records_diff != {}:
