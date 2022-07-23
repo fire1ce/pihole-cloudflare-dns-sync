@@ -32,16 +32,16 @@ To create a CloudFlare API token for your DNS zone go to [https://dash.cloudflar
 
 ## Parameters
 
-| Parameter               | Description            | Default         | Type    | Required |
-| ----------------------- | ---------------------- | --------------- | ------- | -------- |
-| CLOUDFLARE_API_TOKEN    | Cloudflare API Token   | change_me       | string  | Yes      |
-| CLOUDFLARE_DOMAIN       | Cloudflare Domain      | example.com     | string  | Yes      |
-| EXCLUDE_PROXIED_RECORDS | Remove Proxied Records | yes             | string  | Yes      |
-| PIHOLE_HOST             | Pi-hole hostname/IP    | 123.123.123.123 | string  | Yes      |
-| PIHOLE_PORT             | Pi-hole port           | 80              | integer | Yes      |
-| USE_HTTPS               | http/https for pihole  | no              | string  | Yes      |
-| PIHOLE_PASSWORD         | Pi-hole password       | change_me       | string  | Yes      |
-| RUN_EVERY               | Run very x minute      | 5               | integer | Yes      |
+| Parameter               | Description             | Default         | Type    | Required |
+| ----------------------- | ----------------------- | --------------- | ------- | -------- |
+| CLOUDFLARE_API_TOKEN    | Cloudflare API Token    | change_me       | string  | Yes      |
+| CLOUDFLARE_DOMAIN       | Cloudflare Domain       | example.com     | string  | Yes      |
+| EXCLUDE_PROXIED_RECORDS | Exclude Proxied Records | yes             | string  | Yes      |
+| PIHOLE_HOST             | Pi-hole hostname/IP     | 123.123.123.123 | string  | Yes      |
+| PIHOLE_PORT             | Pi-hole port            | 80              | integer | Yes      |
+| USE_HTTPS               | http/https for pihole   | no              | string  | Yes      |
+| PIHOLE_PASSWORD         | Pi-hole password        | change_me       | string  | Yes      |
+| RUN_EVERY               | Run very x minute       | 5               | integer | Yes      |
 
 ## Usage
 
