@@ -281,14 +281,14 @@ while True:
         update_a_records(a_records_diff)
         delete_a_records(a_records_diff)
     else:
-        print("No A records to sync")
+        print("All A records are synced")
 
     if cname_records_diff != {}:
         add_new_cname_records(cname_records_diff)
         update_cname_records(cname_records_diff)
         delete_cname_records(cname_records_diff)
     else:
-        print("No CNAME records to sync")
+        print("All CNAME records are synced")
 
     print("Sleeping for " + str(run_every_x_min) + " minutes")
     print("----------------------------------------------------")
