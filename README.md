@@ -56,7 +56,7 @@ docker run -d \
   -v /etc/localtime:/etc/localtime:ro \
   -e CLOUDFLARE_API_TOKEN=cloudflare_secret_dns_zone_api_token \
   -e CLOUDFLARE_DOMAIN=example.com \
-  -e REMOVE_PROXIED=yes \
+  -e EXCLUDE_PROXIED_RECORDS=yes \
   -e PIHOLE_HOST=123.123.123.123 \
   -e PIHOLE_PORT=80 \
   -e USE_HTTPS=no \
@@ -85,7 +85,7 @@ services:
     environment:
       - CLOUDFLARE_API_TOKEN=cloudflare_secret_dns_zone_api_token
       - CLOUDFLARE_DOMAIN=example.com
-      - REMOVE_PROXIED=yes
+      - EXCLUDE_PROXIED_RECORDS=yes
       - PIHOLE_HOST=123.123.123.123
       - PIHOLE_PORT=80
       - USE_HTTPS=no

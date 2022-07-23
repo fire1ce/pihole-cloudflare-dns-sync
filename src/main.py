@@ -13,7 +13,7 @@ sleep_for_x_sec = 60 * run_every_x_min
 ### CloudFlare params ###
 cf = CloudFlare.CloudFlare(token=str(environ["CLOUDFLARE_API_TOKEN"]))
 cf_domain = str(environ["CLOUDFLARE_DOMAIN"])
-exclude_proxied_records = str(environ["REMOVE_PROXIED"])
+exclude_proxied_records = str(environ["EXCLUDE_PROXIED_RECORDS"])
 
 ### Pihole params ###
 pihole_host = str(environ["PIHOLE_HOST"])
