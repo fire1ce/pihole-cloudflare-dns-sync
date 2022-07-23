@@ -96,9 +96,7 @@ def get_cf_records():
                 zone_id, params={"per_page": 500, "proxied": False}
             )
         elif exclude_proxied_records == "no":
-            cf_dns_records = cf.zones.dns_records.get(
-                zone_id, params={"per_page": 500, "proxied": True}
-            )
+            cf_dns_records = cf.zones.dns_records.get(zone_id, params={"per_page": 500})
     except CloudFlare.exceptions.CloudFlareAPIError as error:
         print("Cloudflare api call failed: " + str(error))
         exit(1)
