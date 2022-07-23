@@ -13,7 +13,7 @@ sleep_for_x_sec = 60 * run_every_x_min
 ### CloudFlare params ###
 cf = CloudFlare.CloudFlare(token=str(environ["CLOUDFLARE_API_TOKEN"]))
 cf_domain = str(environ["CLOUDFLARE_DOMAIN"])
-remove_proxied = str(environ["REMOVE_PROXIED"])
+exclude_proxied_records = str(environ["REMOVE_PROXIED"])
 
 ### Pihole params ###
 pihole_host = str(environ["PIHOLE_HOST"])
@@ -70,7 +70,7 @@ def get_cname_records_from_pihole():
 def get_cf_records():
     # Query for the zone name and expect only one value back
     try:
-        zones = cf.zones.get(params={"name": cf_domain, "per_page": 500})
+        zones = cf.zones.get(params={"name": cf_domain, "per_page": 10})
     except CloudFlare.exceptions.CloudFlareAPIError as error:
         print("Cloudflare api call failed: " + str(error))
         exit(1)
@@ -91,38 +91,20 @@ def get_cf_records():
 
     # Request the DNS records from that zone
     try:
-        cf_dns_records = cf.zones.dns_records.get(zone_id)
+        if exclude_proxied_records == "yes":
+            cf_dns_records = cf.zones.dns_records.get(
+                zone_id, params={"per_page": 500, "proxied": False}
+            )
+        elif exclude_proxied_records == "no":
+            cf_dns_records = cf.zones.dns_records.get(
+                zone_id, params={"per_page": 500, "proxied": True}
+            )
     except CloudFlare.exceptions.CloudFlareAPIError as error:
         print("Cloudflare api call failed: " + str(error))
         exit(1)
+
     print("Fetched Cloudflare's DNS records")
     return cf_dns_records
-
-
-# get proxied records from cf_dns_records
-def get_proxied_records(cf_dns_records):
-    cf_proxied_records = {}
-    for dns_record in cf_dns_records:
-        if dns_record["proxied"] == True:
-            # add all proxied records to a dict
-            cf_proxied_records[dns_record["name"]] = dns_record["content"]
-    return cf_proxied_records
-
-
-# Remove Proxied A records from cloudflare records
-def remove_proxied_a_records(cf_a_records, cf_proxied_records):
-    for record in cf_proxied_records:
-        if record in cf_a_records:
-            del cf_a_records[record]
-    return cf_a_records
-
-
-# Remove Proxied CNAME records from cloudflare records
-def remove_proxied_cname_records(cf_cname_records, cf_proxied_records):
-    for record in cf_proxied_records:
-        if record in cf_cname_records:
-            del cf_cname_records[record]
-    return cf_cname_records
 
 
 # Create a dictionary of the cloudflare A records
@@ -288,13 +270,6 @@ while True:
     cf_a_records = get_cf_a_records(cf_dns_records)
     cf_cname_records = get_cf_cname_records(cf_dns_records)
 
-    if remove_proxied == "yes":
-        cf_proxied_records = get_proxied_records(cf_dns_records)
-
-    if cf_proxied_records != {}:
-        cf_a_records = remove_proxied_a_records(cf_a_records, cf_proxied_records)
-        cf_cname_records = remove_proxied_cname_records(cf_cname_records, cf_proxied_records)
-
     a_records_diff = DeepDiff(
         pihole_a_records, cf_a_records, ignore_string_case=True, ignore_order=True
     )
@@ -318,4 +293,5 @@ while True:
         print("No CNAME records to sync")
 
     print("Sleeping for " + str(run_every_x_min) + " minutes")
+    print("----------------------------------------------------")
     sleep(sleep_for_x_sec)
