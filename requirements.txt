@@ -9,6 +9,6 @@ jsonlines==3.1.0
 ordered-set==4.1.0
 pi-hole-api==0.1.5
 PyYAML==6.0
-requests==2.28.1
+requests==2.31.0
 soupsieve==2.3.2.post1
 urllib3==1.26.10
