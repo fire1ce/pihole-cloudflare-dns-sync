@@ -1,0 +1,22 @@
+version: 1
+formatters:
+  simple:
+    format: '%(asctime)s - %(levelname)s - %(message)s'
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: DEBUG
+    formatter: simple
+    stream: ext://sys.stdout
+  file:
+    class: logging.handlers.TimedRotatingFileHandler
+    level: DEBUG
+    formatter: simple
+    filename: log/pihole-cloudflare-dns-sync.log
+    when: D
+    interval: 1
+    backupCount: 7
+    encoding: utf-8
+root:
+  level: DEBUG
+  handlers: [console, file]

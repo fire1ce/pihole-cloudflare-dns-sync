@@ -1,5 +1,13 @@
 # pihole-cloudflare-dns-sync
 
+## TODO
+
+- Add support for multi pihole instances
+- handle the error count
+- Add support apprise notifications
+
+## Table of Contents
+
 [![Build](https://github.com/fire1ce/pihole-cloudflare-dns-sync/actions/workflows/ci.yml/badge.svg)](https://github.com/fire1ce/pihole-cloudflare-dns-sync/actions/workflows/ci.yml) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![Docker Pulls](https://img.shields.io/docker/pulls/fire1ce/pihole-cloudflare-dns-sync.svg)](https://hub.docker.com/r/fire1ce/pihole-cloudflare-dns-sync) [![Docker Stars](https://img.shields.io/docker/stars/fire1ce/pihole-cloudflare-dns-sync.svg)](https://hub.docker.com/r/fire1ce/pihole-cloudflare-dns-sync) [![https://3os.org](https://img.shields.io/badge/Follow-https%3A%2F%2F3os.org-orange)](https://3os.org) [![Contribution is Welcome](https://img.shields.io/badge/Contribution%20Is-Welcomed-brightgreen)](https://github.com/fire1ce/pihole-cloudflare-dns-sync)
 
 ## Description
@@ -32,16 +40,15 @@ To create a CloudFlare API token for your DNS zone go to [https://dash.cloudflar
 
 ## Parameters
 
-| Parameter               | Description             | Default         | Type    | Required |
-| ----------------------- | ----------------------- | --------------- | ------- | -------- |
-| CLOUDFLARE_API_TOKEN    | Cloudflare API Token    | change_me       | string  | Yes      |
-| CLOUDFLARE_DOMAIN       | Cloudflare Domain       | example.com     | string  | Yes      |
-| EXCLUDE_PROXIED_RECORDS | Exclude Proxied Records | yes             | string  | Yes      |
-| PIHOLE_HOST             | Pi-hole hostname/IP     | 123.123.123.123 | string  | Yes      |
-| PIHOLE_PORT             | Pi-hole port            | 80              | integer | Yes      |
-| USE_HTTPS               | http/https for pihole   | no              | string  | Yes      |
-| PIHOLE_PASSWORD         | Pi-hole password        | change_me       | string  | Yes      |
-| RUN_EVERY               | Run very x minute       | 5               | integer | Yes      |
+| Parameter            | Description           | Default         | Type    | Required |
+| -------------------- | --------------------- | --------------- | ------- | -------- |
+| CLOUDFLARE_API_TOKEN | Cloudflare API Token  | change_me       | string  | Yes      |
+| CLOUDFLARE_DOMAIN    | Cloudflare Domain     | example.com     | string  | Yes      |
+| PIHOLE_HOST          | Pi-hole hostname/IP   | 123.123.123.123 | string  | Yes      |
+| PIHOLE_PORT          | Pi-hole port          | 80              | integer | Yes      |
+| USE_HTTPS            | http/https for pihole | no              | string  | Yes      |
+| PIHOLE_PASSWORD      | Pi-hole password      | change_me       | string  | Yes      |
+| RUN_EVERY            | Run very x minute     | 5               | integer | Yes      |
 
 ## Usage
 
@@ -56,7 +63,6 @@ docker run -d \
   -v /etc/localtime:/etc/localtime:ro \
   -e CLOUDFLARE_API_TOKEN=cloudflare_secret_dns_zone_api_token \
   -e CLOUDFLARE_DOMAIN=example.com \
-  -e EXCLUDE_PROXIED_RECORDS=yes \
   -e PIHOLE_HOST=123.123.123.123 \
   -e PIHOLE_PORT=80 \
   -e USE_HTTPS=no \
@@ -85,7 +91,6 @@ services:
     environment:
       - CLOUDFLARE_API_TOKEN=cloudflare_secret_dns_zone_api_token
       - CLOUDFLARE_DOMAIN=example.com
-      - EXCLUDE_PROXIED_RECORDS=yes
       - PIHOLE_HOST=123.123.123.123
       - PIHOLE_PORT=80
       - USE_HTTPS=no
