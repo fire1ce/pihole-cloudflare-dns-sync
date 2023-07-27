@@ -29,7 +29,7 @@ import yaml
 config_file = "src/logger/logging_settings.yml"
 
 
-def iniLogger(name="root", log_level=None):
+def init_logger(name="root", log_level=None):
     try:
         with open(config_file, "r") as stream:
             config = yaml.load(stream, Loader=yaml.FullLoader)

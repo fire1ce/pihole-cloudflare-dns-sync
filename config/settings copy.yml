@@ -1,0 +1,23 @@
+cloudflare:
+  domains:
+    - domain: '3os.re'
+      token: 'asikjuhaskijndkjasdkjsandkjsa'
+      include_proxied_records: false
+    - domain: '3os.org'
+      token: 'asdasdasdasdasdasdasdasdasd'
+      include_proxied_records: false
+
+pihole:
+  servers:
+    - host: '10.10.10.146'
+      port: 80
+      password: 'Y26&?A8Gkz[.riFWKa2.X2yb'
+      use_https: false
+    - host: '10.10.10.103'
+      port: 8080
+      password: 'Y26&?A8Gkz'
+      use_https: false
+
+sync_interval_minutes: 1
+error_threshold: 5
+send_notifications: true
