@@ -3,6 +3,7 @@
 ###############
 
 burp.burp
+settings.yml
 
 # General
 .DS_Store
