@@ -10,34 +10,6 @@ class SyncError(Exception):
     pass
 
 
-def fetch_and_compare_records(ph_api_obj, cf_api_obj, pihole_server_name, cf_domains):
-    records_types = ["a", "cname"]
-    cf_a_records_dict, cf_cname_records_dict = cf_api_obj.get_cf_records()
-    cf_records_dict = {"a": cf_a_records_dict, "cname": cf_cname_records_dict}
-
-    for record_type in records_types:
-        pihole_records = ph_api_obj.get_records_from_pihole(record_type)
-
-        records_diff = DeepDiff(
-            pihole_records, cf_records_dict[record_type], ignore_string_case=True, ignore_order=True
-        )
-        logger.debug(f"{record_type}_records_diff for server {pihole_server_name}:\n {records_diff}")
-
-        # Only call add_records if there were additions
-        if "dictionary_item_added" in records_diff:
-            ph_api_obj.add_records(records_diff, cf_records_dict[record_type], record_type)
-
-        # Only call delete_records if there were removals
-        if "dictionary_item_removed" in records_diff:
-            ph_api_obj.delete_records(records_diff, pihole_records, cf_domains, record_type)
-
-        # Only call update_records if there were changes
-        if "values_changed" in records_diff:
-            ph_api_obj.update_records(records_diff, cf_records_dict[record_type], pihole_records, record_type)
-
-    return
-
-
 def sleep_and_log(minutes, logger):
     logger.info(f"Sleeping for {minutes} minutes")
     logger.info("----------------------------------------------------")
@@ -60,6 +32,42 @@ def check_error_counter(iteration_error_counter, error_counter, error_threshold,
     return iteration_error_counter, error_counter
 
 
+def sync_records(pihole_api, cf_records_dict, pihole_server_name, cloudflare_domains):
+    records_types = ["a", "cname"]
+
+    for record_type in records_types:
+        pihole_records = pihole_api.get_records_from_pihole(record_type, cloudflare_domains)
+
+        records_diff = DeepDiff(
+            pihole_records, cf_records_dict[record_type], ignore_string_case=True, ignore_order=True
+        )
+        logger.debug(f"{record_type}_records_diff for server {pihole_server_name}:\n {records_diff}")
+
+        # Initialize change flag
+        changes_detected = False
+
+        # Only call add_records if there were additions
+        if "dictionary_item_added" in records_diff:
+            pihole_api.add_records(records_diff, cf_records_dict[record_type], record_type)
+            changes_detected = True
+
+        # Only call delete_records if there were removals
+        if "dictionary_item_removed" in records_diff:
+            pihole_api.delete_records(records_diff, pihole_records, cloudflare_domains, record_type)
+            changes_detected = True
+
+        # Only call update_records if there were changes
+        if "values_changed" in records_diff:
+            pihole_api.update_records(records_diff, cf_records_dict[record_type], pihole_records, record_type)
+            changes_detected = True
+
+        # Log if no changes were detected
+        if not changes_detected:
+            logger.info(f"No changes detected for {record_type.upper()} records on pihole {pihole_server_name}")
+
+    return
+
+
 def main(config_data, logger):
     sync_interval_minutes = config_data["sync_interval_minutes"]
     error_threshold = config_data["error_threshold"]
@@ -69,13 +77,17 @@ def main(config_data, logger):
 
     while True:
         try:
-            cf_domains = [domain_data["domain"] for domain_data in config_data["cloudflare"]["domains"]]
-            logger.debug(f"cf_domains list: {cf_domains}")
-            cf_api_obj = CfApi(config_data, SyncError, logger)
+            cloudflare_domains = [domain_data["domain"] for domain_data in config_data["cloudflare"]["domains"]]
+            logger.debug(f"cloudflare_domains list: {cloudflare_domains}")
+            cloudflare_api = CfApi(config_data, SyncError, logger)
+            cf_A_records_dict, cf_CNAME_records_dict = cloudflare_api.fetch_and_process_cf_records()  # Fetch once
+            cf_records_dict = {"a": cf_A_records_dict, "cname": cf_CNAME_records_dict}
 
             for server_config in config_data["pihole"]["servers"]:
-                ph_api_obj = PhApi(server_config, SyncError, logger)
-                fetch_and_compare_records(ph_api_obj, cf_api_obj, server_config["host"], cf_domains)
+                pihole_api = PhApi(server_config, SyncError, logger)
+                sync_records(
+                    pihole_api, cf_records_dict, server_config["host"], cloudflare_domains
+                )  # Pass fetched records
 
         except SyncError as error:
             iteration_error_counter += 1
@@ -92,7 +104,7 @@ def main(config_data, logger):
 
 if __name__ == "__main__":
     # Create logger and load logger config file
-    log_level = "DEBUG"
+    log_level = "INFO"
     logger = init_logger(name="root", log_level=log_level)
 
     # Load and validate configuration

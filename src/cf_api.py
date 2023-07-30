@@ -2,20 +2,21 @@ import CloudFlare
 
 
 class CfApi:
+    cloudflare_zone_ids = {}  # Now a class variable
+
     def __init__(self, config_data, SyncError, logger):
         self.config_data = config_data
         self.SyncError = SyncError
         self.logger = logger
-        self.zone_ids = {}
 
-    def get_cf_records(self):
+    def fetch_and_process_cf_records(self):
         cf_a_record_dict = {}
         cf_cname_record_dict = {}
-        self.logger.debug(f"ZONE IDs: {self.zone_ids}")
+        self.logger.debug(f"ZONE IDs: {CfApi.cloudflare_zone_ids}")
         for domain_config in self.config_data["cloudflare"]["domains"]:
             cf_domain = domain_config["domain"]
             cf_token = domain_config["token"]
-            zone_id = self.zone_ids.get(cf_domain)  # Get the stored zone_id, if any
+            zone_id = self.cloudflare_zone_ids.get(cf_domain)  # Get the stored zone_id, if any
             domain_dns_records = []
 
             try:
@@ -32,7 +33,7 @@ class CfApi:
 
                     # Extract and store the zone_id
                     zone_id = zones[0]["id"]
-                    self.zone_ids[cf_domain] = zone_id  # Store the zone_id for this domain
+                    self.cloudflare_zone_ids[cf_domain] = zone_id  # Store the zone_id for this domain
 
                 except CloudFlare.exceptions.CloudFlareAPIError as error:
                     self.logger.error(

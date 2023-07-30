@@ -24,14 +24,14 @@ class PhApi:
             pihole_api = pi.Pihole(pihole_url, pihole_password)
         except Exception as error:
             self.logger.error(
-                f"Could not connect to pihole server {self.pihole_server_name}: {pihole_url}. Check your password."
+                f"Could not connect to Pi-hole server {self.pihole_server_name} at {pihole_url}. Please check your server status, network settings, and credentials.\n Error: {str(error)}"
             )
             raise self.SyncError(error)
 
         self.logger.info(f"Connection established with Pihole server {self.pihole_server_name}: {pihole_url}")
         return pihole_api
 
-    def get_records_from_pihole(self, record_type):
+    def get_records_from_pihole(self, record_type, cloudflare_domains):
         try:
             if record_type == "a":
                 pihole_record_list = self.pihole_api.dns("get")["data"]
@@ -48,7 +48,9 @@ class PhApi:
 
         pihole_records_dict = {}
         for pihole_record in pihole_record_list:
-            pihole_records_dict[pihole_record[0]] = pihole_record[1]
+            domain = pihole_record[0]
+            if any(domain.endswith(cf_domain) for cf_domain in cloudflare_domains):
+                pihole_records_dict[domain] = pihole_record[1]
 
         self.logger.info(f"Fetched {self.pihole_server_name} Pihole's {record_type} records")
         return pihole_records_dict
@@ -72,11 +74,11 @@ class PhApi:
             )
             raise self.SyncError(error)
 
-    def delete_records(self, records_diff, pihole_records_dict, cf_domains, record_type):
+    def delete_records(self, records_diff, pihole_records_dict, cloudflare_domains, record_type):
         for record in records_diff.get("dictionary_item_removed", {}):
             hostname = record.split("['")[1].split("']")[0]
-            # Check if the hostname ends with any of the cf_domains before deleting
-            if any(hostname.endswith(cf_domain) for cf_domain in cf_domains):
+            # Check if the hostname ends with any of the cloudflare_domains before deleting
+            if any(hostname.endswith(cf_domain) for cf_domain in cloudflare_domains):
                 record_data = pihole_records_dict[hostname]
                 self._delete_single_record(hostname, record_data, record_type)
 
