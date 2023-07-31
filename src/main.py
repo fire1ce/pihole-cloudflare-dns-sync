@@ -2,6 +2,7 @@ from deepdiff import DeepDiff
 from time import sleep
 from logger import init_logger
 import config_init
+from apprise_notifier import Notifier
 from ph_api import PhApi
 from cf_api import CfApi
 
@@ -16,7 +17,7 @@ def sleep_and_log(minutes, logger):
     sleep(minutes * 60)
 
 
-def check_error_counter(iteration_error_counter, error_counter, error_threshold, logger):
+def check_error_counter(iteration_error_counter, error_counter, error_threshold, logger, notifier):
     if iteration_error_counter >= 1:
         error_counter += 1
         iteration_error_counter = 0
@@ -25,8 +26,8 @@ def check_error_counter(iteration_error_counter, error_counter, error_threshold,
         error_counter = 0
 
     if error_counter >= error_threshold:
-        if send_notifications:
-            logger.warning(f"Error threshold reached: {error_threshold} errors")
+        if notifier:
+            notifier.send_notification("Error threshold reached", f"{error_threshold} consecutive errors occurred.")
         error_counter = 0  # reset error counter
 
     return iteration_error_counter, error_counter
@@ -69,9 +70,12 @@ def sync_records(pihole_api, cf_records_dict, pihole_server_name, cloudflare_dom
 
 
 def main(config_data, logger):
+    notifier = None
+    if config_data["notifications"]["apprise"]["enabled"]:
+        notifier = Notifier(config_data, SyncError, logger)
+        notifier.send_notification("Pihole-Cloudflare DNS Sync", "The synchronization process has started.")
     sync_interval_minutes = config_data["sync_interval_minutes"]
     error_threshold = config_data["error_threshold"]
-    send_notifications = config_data["send_notifications"]
     iteration_error_counter = 0
     error_counter = 0
 
@@ -95,7 +99,7 @@ def main(config_data, logger):
 
         # Check error counter after each iteration
         iteration_error_counter, error_counter = check_error_counter(
-            iteration_error_counter, error_counter, error_threshold, logger
+            iteration_error_counter, error_counter, error_threshold, logger, notifier
         )
 
         # Sleep code here...

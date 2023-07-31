@@ -20,4 +20,18 @@ pihole:
 
 sync_interval_minutes: 1
 error_threshold: 5
-send_notifications: true
+
+notifications:
+  apprise:
+    enabled: true
+    server:
+      host: 'apprise.3os.re'
+      port: 443
+      use_https: true
+    urls:
+      - tgram://BOTTOKEN/CHATID/
+      - discord://WebhookID/WebhookToken
+      - slack://TokenA/TokenB/TokenC
+
+web_server:
+  enabled: true
