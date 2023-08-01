@@ -35,3 +35,6 @@ notifications:
 
 web_server:
   enabled: true
+  port: 8080
+  password: 'your_password'
+  username: 'your_username'

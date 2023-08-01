@@ -3,8 +3,10 @@ from time import sleep
 from logger import init_logger
 import config_init
 from apprise_notifier import Notifier
+from tailon_server import TailonServer
 from ph_api import PhApi
 from cf_api import CfApi
+import os
 
 
 class SyncError(Exception):
@@ -27,7 +29,10 @@ def check_error_counter(iteration_error_counter, error_counter, error_threshold,
 
     if error_counter >= error_threshold:
         if notifier:
-            notifier.send_notification("Error threshold reached", f"{error_threshold} consecutive errors occurred.")
+            notifier.send_notification(
+                "Pihole-Cloudflare-DNS-Sync",
+                f"Error threshold reached. {error_threshold} consecutive errors occurred. You should check the logs.",
+            )
         error_counter = 0  # reset error counter
 
     return iteration_error_counter, error_counter
@@ -79,36 +84,58 @@ def main(config_data, logger):
     iteration_error_counter = 0
     error_counter = 0
 
-    while True:
-        try:
-            cloudflare_domains = [domain_data["domain"] for domain_data in config_data["cloudflare"]["domains"]]
-            logger.debug(f"cloudflare_domains list: {cloudflare_domains}")
-            cloudflare_api = CfApi(config_data, SyncError, logger)
-            cf_A_records_dict, cf_CNAME_records_dict = cloudflare_api.fetch_and_process_cf_records()  # Fetch once
-            cf_records_dict = {"a": cf_A_records_dict, "cname": cf_CNAME_records_dict}
-
-            for server_config in config_data["pihole"]["servers"]:
-                pihole_api = PhApi(server_config, SyncError, logger)
-                sync_records(
-                    pihole_api, cf_records_dict, server_config["host"], cloudflare_domains
-                )  # Pass fetched records
-
-        except SyncError as error:
-            iteration_error_counter += 1
-            logger.debug(f"Iteration Error counter: {iteration_error_counter}")
-
-        # Check error counter after each iteration
-        iteration_error_counter, error_counter = check_error_counter(
-            iteration_error_counter, error_counter, error_threshold, logger, notifier
+    # Create an instance of TailonServer
+    web_server_config = config_data.get("web_server", {})
+    tailon_server = None
+    if web_server_config.get("enabled", False):  # Check if web_server is enabled
+        tailon_server = TailonServer(
+            enabled=web_server_config.get("enabled", False),
+            port=web_server_config.get("port", 8080),
+            username=web_server_config.get("username"),
+            password=web_server_config.get("password"),
+            logger=logger,
         )
+        # Start the Tailon log server instance
+        tailon_server.start()
 
-        # Sleep code here...
-        sleep_and_log(sync_interval_minutes, logger)
+    try:
+        while True:
+            try:
+                cloudflare_domains = [domain_data["domain"] for domain_data in config_data["cloudflare"]["domains"]]
+                logger.debug(f"cloudflare_domains list: {cloudflare_domains}")
+                cloudflare_api = CfApi(config_data, SyncError, logger)
+                cf_A_records_dict, cf_CNAME_records_dict = cloudflare_api.fetch_and_process_cf_records()  # Fetch once
+                cf_records_dict = {"a": cf_A_records_dict, "cname": cf_CNAME_records_dict}
+
+                for server_config in config_data["pihole"]["servers"]:
+                    pihole_api = PhApi(server_config, SyncError, logger)
+                    sync_records(
+                        pihole_api, cf_records_dict, server_config["host"], cloudflare_domains
+                    )  # Pass fetched records
+
+            except SyncError as error:
+                iteration_error_counter += 1
+                logger.debug(f"Iteration Error counter: {iteration_error_counter}")
+
+            # Check error counter after each iteration
+            iteration_error_counter, error_counter = check_error_counter(
+                iteration_error_counter, error_counter, error_threshold, logger, notifier
+            )
+
+            # Sleep code here...
+            sleep_and_log(sync_interval_minutes, logger)
+
+    finally:
+        # Stop the TailonServer instance when the script ends, if it was started
+        if web_server_config.get("enabled", False) and tailon_server is not None:
+            tailon_server.stop()
 
 
 if __name__ == "__main__":
+    # Get log level from environment variable, default to 'INFO' if not set
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+
     # Create logger and load logger config file
-    log_level = "INFO"
     logger = init_logger(name="root", log_level=log_level)
 
     # Load and validate configuration

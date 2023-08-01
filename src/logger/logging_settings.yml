@@ -12,7 +12,7 @@ handlers:
     class: logging.handlers.TimedRotatingFileHandler
     level: DEBUG
     formatter: simple
-    filename: log/pihole-cloudflare-dns-sync.log
+    filename: logs/pihole-cloudflare-dns-sync.log
     when: D
     interval: 1
     backupCount: 7

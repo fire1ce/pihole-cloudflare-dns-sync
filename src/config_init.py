@@ -65,6 +65,16 @@ def validate_config(config, logger):
                 f"Invalid enabled flag for web server: {config['web_server']['enabled']}. Expected a boolean value (true/false)."
             )
             return False
+        if "username" in config["web_server"] and (
+            not isinstance(config["web_server"]["username"], str) or len(config["web_server"]["username"]) == 0
+        ):
+            logger.error(f"Invalid username for web server. Expected a non-empty string.")
+            return False
+        if "password" in config["web_server"] and (
+            not isinstance(config["web_server"]["password"], str) or len(config["web_server"]["password"]) == 0
+        ):
+            logger.error(f"Invalid password for web server. Expected a non-empty string.")
+            return False
 
     # Validate global settings
     if not isinstance(config["sync_interval_minutes"], int) or config["sync_interval_minutes"] <= 0:
