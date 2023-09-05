@@ -24,7 +24,7 @@ jobs:
         run: echo "::set-output name=tag::$(date -u +'%Y%m%d%H%M')"
       -
         name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v2
