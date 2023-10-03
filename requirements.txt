@@ -11,4 +11,4 @@ pi-hole-api==0.1.5
 PyYAML==6.0
 requests==2.31.0
 soupsieve==2.3.2.post1
-urllib3==1.26.10
+urllib3==1.26.17
